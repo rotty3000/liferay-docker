@@ -225,9 +225,13 @@ function start_tomcat {
 
 	"./${TEMP_DIR}/liferay/tomcat/bin/catalina.sh" stop
 
-	sleep 30
+	for i in {0..30..1}; do
+		if kill -0 "${pid}" 2>/dev/null; then
+			sleep 1
+		fi
+	done
 
-	kill -9 "${pid}" 2>/dev/null
+	kill -0 "${pid}" 2>/dev/null && kill -9 "${pid}" 2>/dev/null
 
 	rm -fr "${TEMP_DIR}/liferay/data/osgi/state"
 	rm -fr "${TEMP_DIR}/liferay/osgi/state"

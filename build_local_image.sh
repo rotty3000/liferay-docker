@@ -37,6 +37,8 @@ function check_usage {
 }
 
 function main {
+	check_utils rsync
+
 	check_usage "${@}"
 
 	make_temp_directory templates/bundle
@@ -49,15 +51,18 @@ function main {
 
 	test_docker_image
 
-	log_in_to_docker_hub
-
-	push_docker_images "${4}"
-
 	clean_up_temp_directory
 }
 
 function prepare_temp_directory {
-	cp -a "${1}" "${TEMP_DIR}/liferay"
+	echo "Preparing TEMP_DIR=${TEMP_DIR}"
+
+	rsync -aq --progress "${1}" "${TEMP_DIR}/liferay" \
+		--exclude '*.zip' \
+		--exclude 'data/elasticsearch*' \
+		--exclude 'logs/*' \
+		--exclude 'osgi/test' \
+		--exclude 'tmp'
 }
 
 main "${@}"

@@ -46,8 +46,8 @@ ENV LIFERAY_USERS_PERIOD_REMINDER_PERIOD_QUERIES_PERIOD_ENABLED=false
 EXPOSE 8000 8009 8080 11311
 
 HEALTHCHECK \
-	--interval=1m \
-	--start-period=1m \
+	--interval=4s \
+	--start-period=10s \
 	--timeout=1m \
 	CMD curl -fsS "http://localhost:8080/c/portal/layout" || exit 1
 
