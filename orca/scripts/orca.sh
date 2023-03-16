@@ -39,19 +39,19 @@ function command_all {
 }
 
 function command_backup {
-	cd builds/deploy
+	lcd builds/deploy
 
 	docker-compose exec backup /usr/local/bin/backup.sh
 }
 
 function command_build {
-	scripts/build_services.sh ${@}
+	scripts/build_services.sh "${@}"
 }
 
 function command_deploy {
-	cd builds
+	lcd builds
 
-	ln -fns ${1} deploy
+	ln -fns "${1}" deploy
 }
 
 function command_force_primary {
@@ -67,7 +67,7 @@ function command_install {
 }
 
 function command_mysql {
-	cd builds/deploy
+	lcd builds/deploy
 
 	docker-compose exec db /usr/local/bin/connect_to_mysql.sh
 }
@@ -89,13 +89,13 @@ function command_setup_shared_volume {
 }
 
 function command_ssh {
-	cd builds/deploy
+	lcd builds/deploy
 
-	docker-compose exec ${1} /bin/bash
+	docker-compose exec "${1}" /bin/bash
 }
 
 function command_unseal {
-	cd builds/deploy
+	lcd builds/deploy
 
 	docker-compose exec vault /usr/bin/vault operator unseal
 }
@@ -106,40 +106,46 @@ function command_up {
 		exit 1
 	fi
 
-	if [ -d /opt/liferay/passwords ]
-	then
-		for service in $(ls /opt/liferay/passwords)
-		do
+	lcd builds/deploy
+
+	for service in $(docker-compose config --services)
+	do
+		if [ -e "/opt/liferay/passwords/${service}" ]
+		then
 			echo "Setting the password for ${service}."
 
-			export ORCA_VAULT_${service}_PASSWORD=$(cat /opt/liferay/passwords/${service})
-		done
-	fi
+			export "ORCA_VAULT_${service}_PASSWORD"="$(cat "/opt/liferay/passwords/${service}")"
+		fi
+	done
 
-	cd builds/deploy
-
-	docker-compose up ${@}
+	docker-compose up "${@}"
 }
 
 function execute_command {
 	if [[ $(type -t "command_${1}") == "function" ]]
 	then
-		command_${1} "${2}" "${3}" "${4}"
+		suffix="${1}"
+		shift
+		"command_${suffix}" "${@}"
 	else
 		echo "${1}: Unrecognized command for orca, passing to docker-compose."
 
-		cd builds/deploy
+		lcd builds/deploy
 
-		docker-compose ${@}
+		docker-compose "${@}"
 	fi
 }
 
-function main {
-	cd $(dirname "$(readlink /proc/$$/fd/255 2>/dev/null)")/../
-
-	check_usage ${@}
-
-	execute_command ${@}
+function lcd {
+	cd "${1}" || exit 3
 }
 
-main ${@}
+function main {
+	lcd "$(dirname "$(readlink /proc/$$/fd/255 2>/dev/null)")/../"
+
+	check_usage "${@}"
+
+	execute_command "${@}"
+}
+
+main "${@}"
